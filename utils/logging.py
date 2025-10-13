@@ -1,4 +1,4 @@
-"""Logging configuration for the weather agent"""
+"""Logging configuration for the Gmail agent"""
 
 import os
 import logging

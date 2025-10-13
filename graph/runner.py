@@ -1,7 +1,7 @@
 """Graph execution and visualization logic"""
 
 import os
-from graph.state import WeatherState
+from graph.state import GmailState
 from config.settings import THREAD_ID, SEPARATOR_LENGTH, MEMORY_SEPARATOR_LENGTH
 from utils.logging import get_logger
 
@@ -22,8 +22,8 @@ async def visualize_graph(graph):
     print("="*SEPARATOR_LENGTH + "\n")
 
 
-async def run_weather_graph(graph):
-    """Run the weather graph system"""
+async def run_gmail_graph(graph):
+    """Run the Gmail graph system"""
     # Check if OpenAI API key is set
     if not os.getenv('OPENAI_API_KEY'):
         print("Warning: OPENAI_API_KEY not found in environment variables")
@@ -34,11 +34,14 @@ async def run_weather_graph(graph):
     await visualize_graph(graph)
 
     # Initial state - LangGraph handles memory automatically
-    initial_state: WeatherState = {
+    initial_state: GmailState = {
         "messages": [],
         "user_query": "",
         "agent_response": "",
-        "continue_conversation": True
+        "continue_conversation": True,
+        "emails": None,
+        "selected_email_id": None,
+        "email_action": None
     }
 
     # Configuration for the graph
@@ -48,12 +51,12 @@ async def run_weather_graph(graph):
         }
     }
 
-    print("Starting Weather Agent Graph...")
+    print("Starting Gmail Agent Graph...")
     print("Tip: The graph will pause for your input at each turn")
     print("Memory: Using LangGraph's built-in memory features")
     print("Commands: Type /help for available commands\n")
     print("="*SEPARATOR_LENGTH)
-    print("Weather Agent - LangGraph Edition with Built-in Memory")
+    print("Gmail Agent - LangGraph Edition with Built-in Memory")
     print("="*SEPARATOR_LENGTH)
 
     try:
@@ -136,7 +139,7 @@ async def run_weather_graph(graph):
 def _display_help():
     """Display help information"""
     print("\n" + "="*MEMORY_SEPARATOR_LENGTH)
-    print("WEATHER AGENT COMMANDS")
+    print("GMAIL AGENT COMMANDS")
     print("="*MEMORY_SEPARATOR_LENGTH)
     print("Available commands:")
     print("  /history, /memory, /context - Show conversation memory")

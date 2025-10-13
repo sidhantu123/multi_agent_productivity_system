@@ -52,4 +52,7 @@ htmlcov/
 # Project specific
 *.db
 *.sqlite
+data/
+config/google_token.json
+config/google_credentials.json
 

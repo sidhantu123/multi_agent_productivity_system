@@ -1,1 +1,1 @@
-"""Tools for the weather agent"""
+"""Tools for the Gmail agent"""

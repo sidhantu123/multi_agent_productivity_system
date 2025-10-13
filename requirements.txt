@@ -6,7 +6,17 @@ openai==1.57.2
 # LangGraph for conversation orchestration
 langgraph>=0.2.0
 langchain-core>=0.3.0
+langsmith>=0.1.0
 
 # HTTP and utilities
 httpx==0.28.1
 python-dotenv==1.0.1
+
+# Google APIs
+google-auth==2.34.0
+google-auth-oauthlib==1.2.1
+google-auth-httplib2==0.2.0
+google-api-python-client==2.149.0
+
+# Database
+tinydb==4.8.0

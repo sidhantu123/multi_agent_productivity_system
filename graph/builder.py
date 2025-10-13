@@ -1,43 +1,43 @@
-"""Graph builder for the weather conversation system"""
+"""Graph builder for the Gmail conversation system"""
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.store.memory import InMemoryStore
 
-from graph.state import WeatherState
-from graph.nodes import user_input_node, weather_agent_node, display_response_node, should_continue
+from graph.state import GmailState
+from graph.nodes import user_input_node, gmail_agent_node, should_continue
 from config.settings import INTERRUPT_BEFORE
 
 
-def create_weather_graph():
-    """Create and compile the LangGraph weather system with built-in memory"""
+def create_gmail_graph():
+    """Create and compile the LangGraph Gmail system with built-in memory"""
     # Create the graph
-    builder = StateGraph(WeatherState)
+    builder = StateGraph(GmailState)
 
-    # Add nodes
+    # Add nodes (bidirectional loop: user_input <-> gmail_agent)
     builder.add_node("user_input", user_input_node)
-    builder.add_node("weather_agent", weather_agent_node)
-    builder.add_node("display_response", display_response_node)
+    builder.add_node("gmail_agent", gmail_agent_node)
 
     # Add edges
     builder.add_edge(START, "user_input")
-    builder.add_edge("weather_agent", "display_response")
-
-    # Add conditional edges
+    
+    # Conditional edge from user_input -> gmail_agent or END
     builder.add_conditional_edges(
         "user_input",
         should_continue,
         {
-            "continue": "weather_agent",
+            "continue": "gmail_agent",
             "end": END
         }
     )
-
+    
+    # Conditional edge from gmail_agent -> user_input or END
     builder.add_conditional_edges(
-        "display_response",
-        lambda x: "continue",  # Always go back to user input
+        "gmail_agent",
+        should_continue,
         {
-            "continue": "user_input"
+            "continue": "user_input",
+            "end": END
         }
     )
 
