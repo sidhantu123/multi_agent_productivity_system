@@ -4,16 +4,17 @@ A powerful, conversational Gmail assistant built with LangGraph and Pydantic AI.
 
 ## Features
 
--  **AI-Powered**: OpenAI GPT-4o-mini with Pydantic AI for natural language understanding
--  **Conversation Memory**: LangGraph's built-in memory system remembers context across the conversation
--  **Full Gmail Integration**: View, search, modify, and send emails via Google Gmail API
--  **Label Management**: Organize emails with Gmail labels
--  **Smart Contact Database**: TinyDB cache for instant email address lookups
--  **Draft & Send**: Create drafts for review or send emails directly
--  **Email Address Lookup**: Finds correct email addresses by searching your email history
--  **Secure OAuth**: Google OAuth 2.0 authentication
--  **Graph Visualization**: Mermaid diagrams of conversation flow
--  **Modular Architecture**: Clean, scalable, production-ready codebase
+- **AI-Powered**: OpenAI GPT-4o-mini with Pydantic AI for natural language understanding
+- **Conversation Memory**: LangGraph's built-in memory system remembers context across the conversation
+- **Full Gmail Integration**: View, search, modify, and send emails via Google Gmail API
+- **Smart Unsubscribe**: Automatic one-click unsubscribe or guided manual unsubscribe from marketing emails
+- **Label Management**: Create, delete, and organize emails with Gmail labels
+- **Smart Contact Database**: TinyDB cache for instant email address lookups
+- **Draft & Send**: Create drafts for review or send emails directly (including draft replies)
+- **Email Address Lookup**: Finds correct email addresses by searching your email history
+- **Secure OAuth**: Google OAuth 2.0 authentication
+- **Graph Visualization**: Separate utility to generate Mermaid diagrams of conversation flow
+- **Modular Architecture**: Clean, organized, production-ready codebase with one tool per file
 
 ## Quick Start
 
@@ -122,8 +123,14 @@ That's it! LangGraph will automatically send traces to LangSmith. View them at h
 
 ### Running the Application
 
+**Start the agent:**
 ```bash
 python main.py
+```
+
+**View graph structure (optional):**
+```bash
+python graph_visualization.py
 ```
 
 On first run, it will:
@@ -136,18 +143,50 @@ On first run, it will:
 
 ```
 langgraph_playground/
-├── main.py                    # Entry point
-├── agents/                    # AI agent definitions
-│   └── gmail_agent.py         # Pydantic AI Gmail agent with tools
-├── graph/                     # LangGraph components
-│   ├── state.py               # GmailState definitions
-│   ├── nodes.py               # Node functions (user_input, gmail_agent, display)
-│   ├── builder.py             # Graph construction
-│   └── runner.py              # Execution logic and visualization
-├── tools/                     # Agent tools
-│   ├── gmail_tools.py         # Gmail API operations
-│   ├── email_database.py      # TinyDB contact management
-│   └── conversation_tools.py  # Conversation control
+├── main.py                          # Entry point
+├── graph_visualization.py           # Standalone graph visualization utility
+├── agents/                          # AI agent definitions
+│   └── gmail_agent.py               # Pydantic AI Gmail agent with tools
+├── graph/                           # LangGraph components
+│   ├── state.py                     # GmailState definitions
+│   ├── nodes.py                     # Node functions (user_input, gmail_agent)
+│   ├── builder.py                   # Graph construction
+│   └── runner.py                    # Execution logic
+├── tools/                           # Agent tools (modular structure)
+│   ├── gmail_tools/                 # Gmail operations (21 files)
+│   │   ├── __init__.py              # Exports all Gmail tools
+│   │   ├── core.py                  # GmailTools service class & GmailDeps
+│   │   ├── list_emails.py           # List recent emails
+│   │   ├── search_emails.py         # Search with Gmail query syntax
+│   │   ├── read_email.py            # Read full email content
+│   │   ├── mark_read.py             # Mark as read
+│   │   ├── mark_unread.py           # Mark as unread
+│   │   ├── archive_email.py         # Archive email
+│   │   ├── trash_email.py           # Move to trash
+│   │   ├── delete_email.py          # Permanently delete
+│   │   ├── get_labels.py            # List all labels
+│   │   ├── create_label.py          # Create new label
+│   │   ├── delete_label.py          # Delete label
+│   │   ├── add_label.py             # Add label to email
+│   │   ├── remove_label.py          # Remove label from email
+│   │   ├── send_email.py            # Send new email
+│   │   ├── reply_to_email.py        # Reply to email
+│   │   ├── create_draft.py          # Create draft email
+│   │   ├── create_draft_reply.py    # Create draft reply
+│   │   ├── find_email_address.py    # Search for email addresses
+│   │   ├── unsubscribe.py           # Smart unsubscribe tool
+│   │   └── get_unread.py            # Get unread emails
+│   ├── database_tools/              # Contact database (7 files)
+│   │   ├── __init__.py              # Exports all database tools
+│   │   ├── db.py                    # TinyDB utilities
+│   │   ├── query_database.py        # Query contacts
+│   │   ├── add_contact.py           # Add contact
+│   │   ├── check_human_sender.py    # Detect human vs automated
+│   │   ├── list_contacts.py         # List all contacts
+│   │   └── remove_contact.py        # Remove contact
+│   └── conversation_tools/          # Conversation control (2 files)
+│       ├── __init__.py              # Exports conversation tools
+│       └── end_conversation.py      # End conversation tool
 ├── utils/                     # Utilities
 │   └── logging.py             # Logging configuration
 ├── config/                    # Configuration
@@ -218,6 +257,25 @@ Agent: Let me check the database...
       Email sent successfully!
 ```
 
+### Unsubscribing from Emails
+
+```
+You: Unsubscribe from email 3
+Agent: Found unsubscribe options for:
+      From: newsletter@company.com
+      
+      Method 1: One-Click Unsubscribe (Automatic)
+      Status: Successfully unsubscribed!
+      
+You: Unsubscribe from email 5
+Agent: Found unsubscribe options for:
+      From: marketing@service.com
+      
+      Method 1: Web Link
+      URL: https://service.com/unsubscribe?id=123
+      Action Required: Click the link above to unsubscribe
+```
+
 ### Contact Management
 
 ```
@@ -244,8 +302,15 @@ Agent: [Lists all saved contacts with emails]
 ### Architecture
 
 ```
-START → user_input → gmail_agent → display_response → user_input (loop)
+START → user_input ⇄ gmail_agent (bidirectional loop)
+                ↓
+               END
 ```
+
+**Bidirectional Flow:**
+- User input triggers agent
+- Agent processes and responds
+- Loop continues until user exits
 
 ### Three-Layer Memory System
 
@@ -308,8 +373,13 @@ When you view an email from a new sender:
 
 ### Labels
 - `get_labels()` - List all labels
+- `create_label()` - Create new label
+- `delete_label()` - Delete label
 - `add_label_to_email()` - Apply label
 - `remove_label_from_email()` - Remove label
+
+### Unsubscribe
+- `unsubscribe_from_email()` - Smart unsubscribe (automatic + manual)
 
 ### Contact Database (TinyDB)
 - `query_email_database()` - Fast lookup
@@ -323,6 +393,7 @@ When you view an email from a new sender:
 
 ### Composition
 - `create_draft_email()` - Create draft
+- `create_draft_reply()` - Create draft reply
 - `send_email()` - Send immediately
 - `reply_to_email()` - Reply to thread
 
@@ -333,45 +404,71 @@ When you view an email from a new sender:
 
 ### Adding a New Gmail Tool
 
+**With modular structure, tools are now organized in separate files:**
+
 ```python
-# 1. Add method to GmailTools class in tools/gmail_tools.py
+# 1. Add method to GmailTools class in tools/gmail_tools/core.py
 class GmailTools:
     def my_operation(self, param: str) -> bool:
         # Use self.service for Gmail API
         return result
 
-# 2. Create Pydantic AI tool function
+# 2. Create new file: tools/gmail_tools/my_tool.py
+from pydantic_ai import RunContext
+from tools.gmail_tools.core import GmailDeps
+
 async def my_tool(ctx: RunContext[GmailDeps], param: str) -> str:
     result = ctx.deps.gmail_service.my_operation(param)
     return f"Result: {result}"
 
-# 3. Register in agents/gmail_agent.py
+# 3. Export in tools/gmail_tools/__init__.py
+from tools.gmail_tools.my_tool import my_tool
+
+__all__ = [
+    # ... existing exports ...
+    'my_tool',
+]
+
+# 4. Register in agents/gmail_agent.py
+from tools.gmail_tools import my_tool
+# ... in create_gmail_agent():
 gmail_agent.tool(my_tool)
 ```
 
 ### Adding a Database Tool
 
 ```python
-# 1. Create in tools/email_database.py
-async def my_db_tool(ctx: RunContext[Any], query: str) -> str:
-    results = db.search(Contact.field == query)
-    return format_results(results)
+# 1. Create new file: tools/database_tools/my_tool.py
+from pydantic_ai import RunContext
+from tools.gmail_tools.core import GmailDeps
+from tools.database_tools.db import get_db
+from tinydb import Query
 
-# 2. Register in agents/gmail_agent.py
+async def my_db_tool(ctx: RunContext[GmailDeps], query: str) -> str:
+    db = get_db()
+    results = db.search(Query().field == query)
+    db.close()
+    return f"Found {len(results)} results"
+
+# 2. Export in tools/database_tools/__init__.py
+from tools.database_tools.my_tool import my_db_tool
+
+# 3. Register in agents/gmail_agent.py
+from tools.database_tools import my_db_tool
 gmail_agent.tool(my_db_tool)
 ```
 
-### Adding a New Node
+### Running Tests
 
-```python
-# 1. Define in graph/nodes.py
-async def my_node(state: GmailState) -> dict:
-    # Your logic
-    return updated_state
+```bash
+# Test graph compilation
+python -c "from graph.builder import create_gmail_graph; graph = create_gmail_graph(); print('✓ Graph OK')"
 
-# 2. Register in graph/builder.py
-builder.add_node("my_node", my_node)
-builder.add_edge("previous_node", "my_node")
+# Test tool imports
+python -c "from tools.gmail_tools import unsubscribe_from_email; print('✓ Tools OK')"
+
+# View graph visualization
+python graph_visualization.py
 ```
 
 ## Documentation
