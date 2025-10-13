@@ -1,4 +1,4 @@
-"""Conversation control tools"""
+"""Conversation control tool: end_conversation"""
 
 from typing import Any
 from pydantic_ai import RunContext
@@ -14,3 +14,4 @@ async def end_conversation(ctx: RunContext[Any]) -> str:
         Confirmation message
     """
     return "Conversation ended. Goodbye!"
+

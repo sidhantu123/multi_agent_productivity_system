@@ -1,4 +1,4 @@
-"""Graph execution and visualization logic"""
+"""Graph execution logic"""
 
 import os
 from graph.state import GmailState
@@ -8,20 +8,6 @@ from utils.logging import get_logger
 logger = get_logger()
 
 
-async def visualize_graph(graph):
-    """Visualize the graph using Mermaid"""
-    print("\n" + "="*SEPARATOR_LENGTH)
-    print("Graph Visualization (Mermaid)")
-    print("="*SEPARATOR_LENGTH)
-    try:
-        mermaid_code = graph.get_graph().draw_mermaid()
-        print(mermaid_code)
-        print("\nCopy the above code to https://mermaid.live to visualize the graph")
-    except Exception as e:
-        print(f"Could not generate Mermaid visualization: {e}")
-    print("="*SEPARATOR_LENGTH + "\n")
-
-
 async def run_gmail_graph(graph):
     """Run the Gmail graph system"""
     # Check if OpenAI API key is set
@@ -29,9 +15,6 @@ async def run_gmail_graph(graph):
         print("Warning: OPENAI_API_KEY not found in environment variables")
         print("Please set it in your .env file or environment")
         return
-
-    # Visualize the graph
-    await visualize_graph(graph)
 
     # Initial state - LangGraph handles memory automatically
     initial_state: GmailState = {
@@ -54,7 +37,8 @@ async def run_gmail_graph(graph):
     print("Starting Gmail Agent Graph...")
     print("Tip: The graph will pause for your input at each turn")
     print("Memory: Using LangGraph's built-in memory features")
-    print("Commands: Type /help for available commands\n")
+    print("Commands: Type /help for available commands")
+    print("Visualization: Run 'python graph_visualization.py' to see graph structure\n")
     print("="*SEPARATOR_LENGTH)
     print("Gmail Agent - LangGraph Edition with Built-in Memory")
     print("="*SEPARATOR_LENGTH)

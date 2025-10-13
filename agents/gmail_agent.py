@@ -23,9 +23,10 @@ from tools.gmail_tools import (
     create_draft_reply,
     send_email,
     reply_to_email,
-    find_email_address
+    find_email_address,
+    unsubscribe_from_email
 )
-from tools.email_database import (
+from tools.database_tools import (
     query_email_database,
     add_email_to_database,
     check_if_human_sender,
@@ -50,6 +51,7 @@ Your capabilities:
 - Search for specific emails using Gmail query syntax
 - Mark emails as read/unread
 - Archive, trash, or permanently delete emails
+- Unsubscribe from marketing emails (automatic one-click or guided)
 - Manage labels (view, create, delete, add to emails, remove from emails)
 - Manage email contact database (query, add, remove contacts)
 - Find correct email addresses for people
@@ -176,6 +178,9 @@ Combine operators:
 
     # Register email lookup tools (fallback if not in database)
     gmail_agent.tool(find_email_address)
+
+    # Register unsubscribe tool
+    gmail_agent.tool(unsubscribe_from_email)
 
     # Register email composition tools
     gmail_agent.tool(create_draft_email)
