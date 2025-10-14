@@ -51,34 +51,43 @@ class GmailTools:
 
     def authenticate(self) -> None:
         """Authenticate with Gmail API"""
-        creds = None
+        # Check if running in cloud environment
+        is_cloud = os.getenv('RAILWAY_ENVIRONMENT') or os.getenv('RENDER')
+        
+        if is_cloud:
+            # Cloud deployment - load from environment variables
+            from tools.gmail_tools.credentials_loader import load_credentials_from_env
+            creds = load_credentials_from_env()
+        else:
+            # Local development - load from files
+            creds = None
 
-        # Load existing token
-        if Path(self.token_path).exists():
-            with open(self.token_path, 'rb') as token:
-                creds = pickle.load(token)
+            # Load existing token
+            if Path(self.token_path).exists():
+                with open(self.token_path, 'rb') as token:
+                    creds = pickle.load(token)
 
-        # Refresh or create new credentials
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                if not Path(self.credentials_path).exists():
-                    raise FileNotFoundError(
-                        f"Google credentials not found at {self.credentials_path}. "
-                        "Please ensure google_credentials.json is in the config folder."
+            # Refresh or create new credentials
+            if not creds or not creds.valid:
+                if creds and creds.expired and creds.refresh_token:
+                    creds.refresh(Request())
+                else:
+                    if not Path(self.credentials_path).exists():
+                        raise FileNotFoundError(
+                            f"Google credentials not found at {self.credentials_path}. "
+                            "Please ensure google_credentials.json is in the config folder."
+                        )
+
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        self.credentials_path,
+                        SCOPES
                     )
+                    creds = flow.run_local_server(port=0)
 
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    self.credentials_path,
-                    SCOPES
-                )
-                creds = flow.run_local_server(port=0)
-
-            # Save credentials
-            Path(self.token_path).parent.mkdir(parents=True, exist_ok=True)
-            with open(self.token_path, 'wb') as token:
-                pickle.dump(creds, token)
+                # Save credentials
+                Path(self.token_path).parent.mkdir(parents=True, exist_ok=True)
+                with open(self.token_path, 'wb') as token:
+                    pickle.dump(creds, token)
 
         self.service = build('gmail', 'v1', credentials=creds)
 
