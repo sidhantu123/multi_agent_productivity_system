@@ -1,19 +1,17 @@
-"""FastAPI webhook server for Gmail notifications with scheduled batch processing"""
+"""FastAPI webhook server for Gmail notifications - Notifies local CLI"""
 
 import asyncio
 import os
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 
-from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi import FastAPI, Request, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from dotenv import load_dotenv
 
 from tools.gmail_tools import GmailTools
-from agents.gmail_agent import get_gmail_agent, get_gmail_tools
-from tools.gmail_tools.core import GmailDeps
 from utils.logging import get_logger
 
 # Load environment variables
@@ -27,26 +25,27 @@ logger = get_logger()
 # Track last check time
 last_check_time: Optional[datetime] = None
 
+# Store active CLI WebSocket connections
+active_cli_connections: List[WebSocket] = []
+
 
 @app.on_event("startup")
 async def startup_event():
     """Start the scheduler when the app starts"""
-    logger.info("Starting Gmail Agent Webhook Server")
+    logger.info("Starting Gmail Agent Webhook Server (CLI Notifier Mode)")
     
     # Start the scheduler
     scheduler.add_job(
-        process_email_batch,
+        notify_cli_about_emails,
         trigger=IntervalTrigger(hours=3),
-        id='email_batch_processor',
-        name='Process email batch every 3 hours',
+        id='email_check_notifier',
+        name='Check emails and notify CLI every 3 hours',
         replace_existing=True
     )
     
     scheduler.start()
-    logger.info("Scheduler started - will run every 3 hours")
-    
-    # Run immediately on startup (optional - comment out if you don't want this)
-    asyncio.create_task(process_email_batch())
+    logger.info("Scheduler started - will notify CLI every 3 hours")
+    logger.info("CLIs can connect at: ws://your-domain/ws/cli")
 
 
 @app.on_event("shutdown")
@@ -56,22 +55,21 @@ async def shutdown_event():
     logger.info("Scheduler stopped")
 
 
-async def process_email_batch():
+async def notify_cli_about_emails():
     """
     Scheduled job that runs every 3 hours to:
-    1. Fetch all new emails from the past 3 hours
-    2. Activate the agent to analyze and process them
-    3. Agent decides what to do with each email
+    1. Check for new emails
+    2. Notify connected local CLI to wake up and process them interactively
     """
     global last_check_time
     
     logger.info("="*60)
-    logger.info(f"EMAIL BATCH PROCESSOR STARTED - {datetime.now()}")
+    logger.info(f"EMAIL CHECK TRIGGERED - {datetime.now()}")
     logger.info("="*60)
     
     try:
         # Initialize Gmail tools
-        gmail_tools = get_gmail_tools()
+        gmail_tools = GmailTools()
         
         # Build search query for last 3 hours
         if last_check_time:
@@ -91,76 +89,92 @@ async def process_email_batch():
         if not emails:
             logger.info("No new emails found")
             logger.info("="*60)
+            
+            # Notify CLI anyway (so they know we checked)
+            await notify_connected_clis({
+                "type": "check_complete",
+                "email_count": 0,
+                "timestamp": datetime.now().isoformat(),
+                "message": "No new emails"
+            })
             return
         
         logger.info(f"Found {len(emails)} new emails")
         
-        # Create agent
-        agent = get_gmail_agent()
-        
-        # Prepare email summary for agent
+        # Prepare email data for CLI
         email_summaries = []
-        for i, email in enumerate(emails, 1):
-            summary = (
-                f"{i}. From: {email.get('from', 'Unknown')}\n"
-                f"   Subject: {email.get('subject', 'No Subject')}\n"
-                f"   Snippet: {email.get('snippet', '')[:100]}...\n"
-                f"   ID: {email.get('id')}"
-            )
-            email_summaries.append(summary)
+        for email in emails:
+            email_summaries.append({
+                "id": email.get('id'),
+                "from": email.get('from', 'Unknown'),
+                "subject": email.get('subject', 'No Subject'),
+                "snippet": email.get('snippet', '')[:150]
+            })
         
-        email_list = "\n\n".join(email_summaries)
+        # Notify all connected CLIs
+        notification = {
+            "type": "new_emails",
+            "email_count": len(emails),
+            "timestamp": datetime.now().isoformat(),
+            "emails": email_summaries
+        }
         
-        # Create prompt for agent
-        user_query = f"""
-You have {len(emails)} new emails to review from the last 3 hours:
-
-{email_list}
-
-Please analyze these emails and:
-1. Categorize them (important, normal, spam/newsletter)
-2. Identify any urgent emails that need immediate attention
-3. For newsletters/spam: automatically archive or unsubscribe
-4. For important emails: provide a brief summary and suggested action
-5. For normal emails: brief summary
-
-Provide a structured report of your analysis and actions taken.
-"""
+        logger.info(f"Notifying {len(active_cli_connections)} connected CLI(s)")
+        await notify_connected_clis(notification)
         
-        logger.info("Activating agent to process emails...")
-        
-        # Create dependencies
-        deps = GmailDeps(
-            emails=emails,
-            gmail_service=gmail_tools
-        )
-        
-        # Run agent
-        result = await agent.run(user_query, deps=deps)
-        
-        # Log agent's response
-        logger.info("\n" + "="*60)
-        logger.info("AGENT ANALYSIS:")
-        logger.info("="*60)
-        logger.info(result.data)
-        logger.info("="*60)
-        
-        # Log tool calls made by agent
-        if hasattr(result, 'all_messages'):
-            tool_calls = [
-                msg for msg in result.all_messages() 
-                if msg.get('role') == 'tool' or 
-                   (msg.get('kind') == 'request' and msg.get('parts'))
-            ]
-            if tool_calls:
-                logger.info(f"\nAgent made {len(tool_calls)} tool calls")
-        
-        logger.info("Batch processing completed successfully")
+        logger.info("Check completed successfully")
         
     except Exception as e:
-        logger.error(f"Error processing email batch: {e}", exc_info=True)
+        logger.error(f"Error checking emails: {e}", exc_info=True)
     
     logger.info("="*60 + "\n")
+
+
+async def notify_connected_clis(message: dict):
+    """Send notification to all connected local CLIs"""
+    disconnected = []
+    
+    for websocket in active_cli_connections:
+        try:
+            await websocket.send_json(message)
+            logger.info(f"Notification sent to CLI")
+        except Exception as e:
+            logger.warning(f"Failed to send to CLI: {e}")
+            disconnected.append(websocket)
+    
+    # Remove disconnected clients
+    for ws in disconnected:
+        active_cli_connections.remove(ws)
+
+
+@app.websocket("/ws/cli")
+async def cli_websocket(websocket: WebSocket):
+    """WebSocket endpoint for local CLI to connect and receive email notifications"""
+    await websocket.accept()
+    active_cli_connections.append(websocket)
+    logger.info(f"CLI connected. Total active CLIs: {len(active_cli_connections)}")
+    
+    # Send welcome message
+    await websocket.send_json({
+        "type": "connected",
+        "message": "Connected to webhook server. You'll be notified every 3 hours about new emails.",
+        "next_check": scheduler.get_jobs()[0].next_run_time.isoformat() if scheduler.get_jobs() else None
+    })
+    
+    try:
+        # Keep connection alive and listen for heartbeats
+        while True:
+            data = await websocket.receive_text()
+            # Client can send heartbeat to keep alive
+            if data == "ping":
+                await websocket.send_json({"type": "pong"})
+    except WebSocketDisconnect:
+        active_cli_connections.remove(websocket)
+        logger.info(f"CLI disconnected. Remaining: {len(active_cli_connections)}")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        if websocket in active_cli_connections:
+            active_cli_connections.remove(websocket)
 
 
 @app.get("/")
@@ -168,8 +182,10 @@ async def root():
     """Health check endpoint"""
     return {
         "status": "ok",
-        "service": "Gmail Agent Webhook",
+        "service": "Gmail Agent Webhook (CLI Notifier)",
+        "mode": "Notifies local CLI to process emails interactively",
         "scheduler_running": scheduler.running,
+        "connected_clis": len(active_cli_connections),
         "last_check": last_check_time.isoformat() if last_check_time else None,
         "next_run": scheduler.get_jobs()[0].next_run_time.isoformat() if scheduler.get_jobs() else None
     }
@@ -207,13 +223,13 @@ async def gmail_webhook(request: Request, background_tasks: BackgroundTasks):
 async def trigger_now(background_tasks: BackgroundTasks):
     """
     Manual trigger endpoint for testing.
-    Hit this to immediately run the batch processor.
+    Hit this to immediately check for emails and notify CLI.
     """
     logger.info("Manual trigger requested")
-    background_tasks.add_task(process_email_batch)
+    background_tasks.add_task(notify_cli_about_emails)
     return {
         "status": "triggered",
-        "message": "Email batch processing started"
+        "message": "Email check started - will notify connected CLIs"
     }
 
 
