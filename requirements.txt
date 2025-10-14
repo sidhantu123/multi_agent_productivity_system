@@ -12,12 +12,6 @@ langsmith>=0.1.0
 httpx==0.28.1
 python-dotenv==1.0.1
 
-# Webhook Server
-fastapi==0.115.0
-uvicorn[standard]==0.32.0
-apscheduler==3.10.4
-websockets==13.1
-
 # Google APIs
 google-auth==2.34.0
 google-auth-oauthlib==1.2.1
