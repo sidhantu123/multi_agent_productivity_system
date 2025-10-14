@@ -1,57 +1,122 @@
-# Gmail Agent Project Structure
+# Multi-Agent Productivity System Project Structure
 
-This document describes the modular organization of the Gmail Agent LangGraph application.
+This document describes the modular organization of the Multi-Agent Productivity System built with LangGraph and Pydantic AI, featuring Gmail and Calendar agents.
 
 ## Directory Structure
 
 ```
 langgraph_playground/
-├── main.py                    # Entry point - run this to start the app
-├── requirements.txt           # Python dependencies
-├── .env                       # Environment variables (OPENAI_API_KEY)
+├── main.py                          # Entry point - Gmail agent with LangGraph
+├── test_calendar.py                 # Standalone Calendar agent CLI test
+├── graph_visualization.py           # Standalone graph visualization utility
+├── requirements.txt                 # Python dependencies
+├── .env                             # Environment variables (OPENAI_API_KEY)
 │
-├── agents/                    # AI agent definitions
+├── agents/                          # AI agent definitions
 │   ├── __init__.py
-│   └── gmail_agent.py         # Pydantic AI Gmail agent with tool registration
+│   ├── gmail_agent.py               # Pydantic AI Gmail agent with tool registration
+│   └── calendar_agent.py            # Pydantic AI Calendar agent (standalone for now)
 │
-├── graph/                     # LangGraph components
-│   ├── __init__.py            # Package exports
-│   ├── state.py               # GmailState type definition
-│   ├── nodes.py               # Node function implementations
-│   ├── builder.py             # Graph construction logic
-│   └── runner.py              # Graph execution and visualization
+├── graph/                           # LangGraph components (Gmail agent only)
+│   ├── __init__.py                  # Package exports
+│   ├── state.py                     # GmailState type definition
+│   ├── nodes.py                     # Node function implementations
+│   ├── builder.py                   # Graph construction logic
+│   └── runner.py                    # Graph execution and visualization
 │
-├── tools/                     # Agent tool functions
+├── tools/                           # Agent tool functions (modular structure)
 │   ├── __init__.py
-│   ├── gmail_tools.py         # Gmail API operations (view, modify, send)
-│   ├── email_database.py      # TinyDB contact management tools
-│   └── conversation_tools.py  # Conversation control (end_conversation)
+│   ├── gmail_tools/                 # Gmail operations (22 files)
+│   │   ├── __init__.py              # Exports all Gmail tools
+│   │   ├── core.py                  # GmailTools service class & GmailDeps
+│   │   ├── list_emails.py           # List recent emails
+│   │   ├── search_emails.py         # Search with Gmail query syntax
+│   │   ├── read_email.py            # Read full email content
+│   │   ├── mark_read.py             # Mark as read
+│   │   ├── mark_unread.py           # Mark as unread
+│   │   ├── archive_email.py         # Archive email
+│   │   ├── trash_email.py           # Move to trash
+│   │   ├── delete_email.py          # Permanently delete
+│   │   ├── get_labels.py            # List all labels
+│   │   ├── create_label.py          # Create new label
+│   │   ├── delete_label.py          # Delete label
+│   │   ├── add_label.py             # Add label to email
+│   │   ├── remove_label.py          # Remove label from email
+│   │   ├── send_email.py            # Send new email
+│   │   ├── reply_to_email.py        # Reply to email
+│   │   ├── create_draft.py          # Create draft email
+│   │   ├── create_draft_reply.py    # Create draft reply
+│   │   ├── find_email_address.py    # Search for email addresses
+│   │   ├── unsubscribe.py           # Smart unsubscribe tool
+│   │   └── get_unread.py            # Get unread emails
+│   ├── calendar_tools/              # Google Calendar operations (12 files)
+│   │   ├── __init__.py              # Exports all Calendar tools
+│   │   ├── core.py                  # CalendarTools service class & CalendarDeps
+│   │   ├── list_events.py           # List upcoming events
+│   │   ├── get_event.py             # Get event details
+│   │   ├── create_event.py          # Create new event
+│   │   ├── update_event.py          # Modify time/details
+│   │   ├── manage_attendees.py      # Add/remove attendees
+│   │   ├── delete_event.py          # Delete event
+│   │   ├── update_rsvp.py           # RSVP updates
+│   │   ├── get_current_time.py      # Current date/time tool
+│   │   ├── add_google_meet.py       # Add Meet / create event with Meet
+│   │   └── set_reminders.py         # Configure event reminders
+│   ├── database_tools/              # Contact database (7 files)
+│   │   ├── __init__.py              # Exports all database tools
+│   │   ├── db.py                    # TinyDB utilities
+│   │   ├── query_database.py        # Query contacts
+│   │   ├── add_contact.py           # Add contact
+│   │   ├── check_human_sender.py    # Detect human vs automated
+│   │   ├── list_contacts.py         # List all contacts
+│   │   └── remove_contact.py        # Remove contact
+│   └── conversation_tools/          # Conversation control (2 files)
+│       ├── __init__.py              # Exports conversation tools
+│       └── end_conversation.py      # End conversation tool
 │
-├── utils/                     # Utility functions
+├── utils/                           # Utility functions
 │   ├── __init__.py
-│   └── logging.py             # Logging configuration
+│   └── logging.py                   # Logging configuration
 │
-├── config/                    # Configuration settings
+├── config/                          # Configuration settings
 │   ├── __init__.py
-│   ├── settings.py            # Application constants
-│   ├── google_credentials.json # OAuth 2.0 client credentials (user provided)
-│   └── google_token.json      # Generated auth token (gitignored)
+│   ├── settings.py                  # Application constants
+│   ├── google_credentials.json      # OAuth 2.0 client credentials (user provided)
+│   ├── google_token.json            # Gmail auth token (gitignored)
+│   └── google_calendar_token.json   # Calendar auth token (gitignored)
 │
-├── data/                      # Data storage (gitignored)
-│   └── email_contacts.json    # TinyDB contact cache
+├── data/                            # Data storage (gitignored)
+│   └── email_contacts.json          # TinyDB contact cache
 │
-└── logs/                      # Generated log files (gitignored)
-    └── langgraph_memory_debug_*.log
+├── logs/                            # Generated log files (gitignored)
+│   └── [various log files]
+│
+└── .claude/                         # Claude IDE configuration
+    ├── CLAUDE.md                    # Development guidelines
+    └── settings.local.json          # Local settings
 ```
 
 ## Module Responsibilities
 
-### `main.py` - Application Entry Point
+### Entry Points
+
+#### `main.py` - Gmail Agent Entry Point
 - Loads environment variables from `.env`
 - Sets up logging configuration
-- Creates the Gmail graph
+- Creates the Gmail LangGraph
 - Runs the main conversation loop
-- **Run this file to start the application**
+- **Run this file to start the Gmail agent with LangGraph**
+
+#### `test_calendar.py` - Calendar Agent CLI Test
+- Standalone CLI for testing Calendar agent
+- Uses Pydantic AI's built-in memory system
+- Direct agent interaction without LangGraph
+- **Run this file to test Calendar agent functionality**
+
+#### `graph_visualization.py` - Graph Visualization Utility
+- Generates Mermaid diagrams of the Gmail agent graph
+- Standalone utility for understanding graph structure
+- **Run this file to visualize the LangGraph structure**
 
 ### `agents/` - AI Agent Definitions
 
@@ -63,10 +128,21 @@ langgraph_playground/
   - New sender detection workflow
   - Draft vs send logic
   - Gmail search syntax guidance
-- Registers all tools with the agent
+- Registers all Gmail and database tools
 - Exports `create_gmail_agent()`, `get_gmail_agent()`, `get_gmail_tools()`
 
-### `graph/` - LangGraph Components
+#### `calendar_agent.py`
+- Creates Pydantic AI agent with OpenAI GPT-4o-mini
+- Defines comprehensive system prompt with:
+  - Agent identity (Sidhant Umbrajkar's Calendar assistant)
+  - PST timezone context and conversion
+  - Google Meet integration
+  - RSVP status management
+  - Event notification configuration
+- Registers all Calendar, database, and conversation tools
+- Exports `create_calendar_agent()`, `get_calendar_agent()`, `get_calendar_tools()`
+
+### `graph/` - LangGraph Components (Gmail Agent Only)
 
 #### `state.py`
 - Defines `GmailState` TypedDict with fields:
@@ -103,386 +179,128 @@ langgraph_playground/
 #### `builder.py`
 - **`create_gmail_graph()`**:
   - Creates `StateGraph(GmailState)`
-  - Adds nodes (user_input, gmail_agent, display_response)
-  - Adds edges (START → user_input, etc.)
-  - Adds conditional edges for routing
-  - Compiles with:
-    - `MemorySaver` for conversation memory
-    - `InMemoryStore` for long-term memory
-    - `interrupt_before=["user_input"]` for human-in-the-loop
+  - Adds all nodes from `nodes.py`
+  - Defines edges and routing logic
+  - Compiles with `MemorySaver` for conversation persistence
+  - Returns compiled graph ready for execution
 
 #### `runner.py`
 - **`run_gmail_graph()`**:
-  - Main execution loop
-  - Handles graph streaming
-  - Processes interrupts for user input
-  - Updates state via `graph.update_state()`
-  
-- **`visualize_graph()`**:
-  - Generates Mermaid diagram
-  - Displays on startup
-  
-- **`_display_help()`**:
-  - Shows available commands
-  
-- **`_display_memory()`**:
-  - Displays conversation history
-  - Shows thread info and state keys
+  - Handles graph execution and user interaction
+  - Manages conversation loop
+  - Handles graceful shutdown
 
-### `tools/` - Agent Tools
+### `tools/` - Agent Tool Functions
 
-#### `gmail_tools.py`
-- **`GmailDeps` dataclass**: Dependency injection container
-  - `emails`: List of fetched emails
-  - `gmail_service`: Authenticated Gmail API service
+#### `gmail_tools/` - Gmail Operations (22 files)
+- **`core.py`**: `GmailTools` service class and `GmailDeps` for dependency injection
+- **Viewing**: `list_emails.py`, `read_email.py`, `get_unread.py`, `search_emails.py`
+- **Modification**: `mark_read.py`, `mark_unread.py`, `archive_email.py`, `trash_email.py`, `delete_email.py`
+- **Labels**: `get_labels.py`, `create_label.py`, `delete_label.py`, `add_label.py`, `remove_label.py`
+- **Composition**: `send_email.py`, `reply_to_email.py`, `create_draft.py`, `create_draft_reply.py`
+- **Utilities**: `find_email_address.py`, `unsubscribe.py`
+- **`__init__.py`**: Exports all Gmail tools for agent registration
 
-- **`GmailTools` class**: Gmail API wrapper
-  - `authenticate()`: OAuth 2.0 flow
-  - `parse_email()`: Extract email metadata
-  - `list_emails()`, `search_emails()`, `get_email()`
-  - `mark_as_read()`, `mark_as_unread()`
-  - `archive()`, `trash()`, `delete_email()`
-  - `get_labels()`, `add_label()`, `remove_label()`
-  - `create_draft()`, `send_email()`, `reply_to_email()`
+#### `calendar_tools/` - Google Calendar Operations (12 files)
+- **`core.py`**: `CalendarTools` service class and `CalendarDeps` for dependency injection
+- **Viewing**: `list_events.py`, `get_event.py`
+- **Creation**: `create_event.py`
+- **Modification**: `update_event.py`, `manage_attendees.py`, `update_rsvp.py`, `set_reminders.py`
+- **Google Meet**: `add_google_meet.py`
+- **Utilities**: `get_current_time.py`, `delete_event.py`
+- **`__init__.py`**: Exports all Calendar tools for agent registration
 
-- **Pydantic AI Tool Functions** (async):
-  - Viewing: `list_emails()`, `get_unread_emails()`, `search_emails()`, `read_email()`
-  - Modification: `mark_email_as_read()`, `mark_email_as_unread()`, `archive_email()`, `trash_email()`, `delete_email()`
-  - Labels: `get_labels()`, `add_label_to_email()`, `remove_label_from_email()`
-  - Composition: `create_draft_email()`, `send_email()`, `reply_to_email()`
-  - Lookup: `find_email_address()`
+#### `database_tools/` - Contact Database (7 files)
+- **`core.py`**: TinyDB utilities and database management
+- **Operations**: `query_database.py`, `add_contact.py`, `list_contacts.py`, `remove_contact.py`
+- **Utilities**: `check_human_sender.py`
+- **`__init__.py`**: Exports all database tools for agent registration
 
-#### `email_database.py`
-- TinyDB database initialization (`data/email_contacts.json`)
-- **Tool Functions** (async):
-  - `query_email_database()`: Fast contact lookup
-  - `add_email_to_database()`: Save new contact
-  - `list_all_contacts()`: View all saved contacts
-  - `remove_contact_from_database()`: Delete contact
-  - `check_if_human_sender()`: Detect human vs automated emails
+#### `conversation_tools/` - Conversation Control (2 files)
+- **`end_conversation.py`**: Graceful conversation termination
+- **`__init__.py`**: Exports conversation tools
 
-#### `conversation_tools.py`
-- `end_conversation()`: Sets `continue_conversation=False` to exit
-
-### `utils/` - Utilities
+### `utils/` - Utility Functions
 
 #### `logging.py`
-- Configures Python logging
-- Creates timestamped log files
-- Debug level for development
-- Exports `setup_logging()` and `get_logger()`
+- Configures Python logging for the application
+- Sets up console and file logging
+- Configures log levels and formats
 
-### `config/` - Configuration
+### `config/` - Configuration Settings
 
 #### `settings.py`
-- Application constants:
-  - `THREAD_ID = "gmail_conversation_1"`
-  - `INTERRUPT_BEFORE = ["user_input"]`
-  - `SEPARATOR_LENGTH = 80`
-  - `MEMORY_SEPARATOR_LENGTH = 60`
-  - `GOOGLE_CREDENTIALS_PATH = "config/google_credentials.json"`
-  - `GOOGLE_TOKEN_PATH = "config/google_token.json"`
+- Application constants and configuration
+- API endpoints and service settings
 
-#### `google_credentials.json` (User Provided)
-- OAuth 2.0 client credentials from Google Cloud Console
-- Format: `{"installed": {"client_id": "...", "client_secret": "...", ...}}`
+#### Authentication Files
+- **`google_credentials.json`**: OAuth 2.0 client credentials (user provided)
+- **`google_token.json`**: Gmail authentication token (gitignored)
+- **`google_calendar_token.json`**: Calendar authentication token (gitignored)
 
-#### `google_token.json` (Generated, Gitignored)
-- Created after first OAuth authentication
-- Contains access token and refresh token
-- Auto-refreshed when expired
+### `data/` - Data Storage
 
-### `data/` - Data Storage (Gitignored)
+#### `email_contacts.json`
+- TinyDB contact cache for fast email lookups
+- Stores contact information learned from email interactions
 
-#### `email_contacts.json` (TinyDB)
-- NoSQL database for contact caching
-- Structure: `{"_default": {"1": {"name": "...", "email": "...", ...}}}`
-- Enables O(1) email address lookups
-- Populated organically as user confirms contacts
+## Architecture Patterns
 
-### `logs/` - Log Files (Gitignored)
+### Multi-Agent System
+- **Gmail Agent**: Integrated with LangGraph for stateful conversations
+- **Calendar Agent**: Standalone Pydantic AI agent for testing and development
+- **Shared Tools**: Database and conversation tools used by both agents
+- **Future**: Orchestrator agent to route between Gmail and Calendar
 
-#### `langgraph_memory_debug_YYYYMMDD_HHMMSS.log`
-- Timestamped debug logs
-- Records state transitions, tool calls, API requests
-- Useful for debugging and audit trail
+### Modular Tool Organization
+- One tool per file for maintainability
+- Service classes (`GmailTools`, `CalendarTools`) for API operations
+- Dependency injection with `GmailDeps` and `CalendarDeps`
+- Centralized exports via `__init__.py` files
 
-## Data Flow
+### Memory Systems
+- **LangGraph Memory**: Conversation persistence for Gmail agent
+- **Pydantic AI Memory**: Built-in message history for Calendar agent
+- **TinyDB Cache**: Contact database for both agents
 
-```
-User Input (terminal)
-         │
-         ▼
-   user_input_node
-    ├─> Validate input
-    ├─> Add to messages
-    └─> Return state
-         │
-         ▼
-   gmail_agent_node
-    ├─> Get Gmail service
-    ├─> Create GmailDeps
-    ├─> Build context from memory
-    ├─> Run Pydantic AI agent
-    │   ├─> Agent calls tools
-    │   │   ├─> Gmail API (via GmailTools)
-    │   │   ├─> TinyDB (via email_database)
-    │   │   └─> Returns results
-    │   └─> Generate response
-    ├─> Update state (emails, response)
-    └─> Return state
-         │
-         ▼
-   display_response_node
-    ├─> Print response
-    └─> Return to user_input (loop)
-```
+## Current Status
 
-## Memory Architecture
+### Implemented
+- ✅ Gmail agent with full LangGraph integration
+- ✅ Calendar agent with standalone CLI
+- ✅ Comprehensive tool sets for both agents
+- ✅ Shared contact database system
+- ✅ Google Meet integration
+- ✅ Event notification/reminder system
+- ✅ PST timezone context for Calendar agent
 
-### 1. LangGraph MemorySaver (Conversation History)
-- Persists `messages[]` array
-- Thread-based: `thread_id="gmail_conversation_1"`
-- Automatic checkpointing after each node
-- Accessible via `/history` command
+### In Progress
+- 🔄 Calendar agent integration into LangGraph architecture
+- 🔄 Orchestrator agent for multi-agent routing
 
-### 2. Email State Cache (Session Context)
-- `emails[]` stored in `GmailState`
-- Enables "email 1", "email 2" references
-- Avoids re-fetching from Gmail API
-- Cleared when session ends
+### Future Enhancements
+- 📋 Unified multi-agent system with LangGraph
+- 📋 Intent-based routing between Gmail and Calendar
+- 📋 Cross-agent workflows (e.g., email → calendar event)
+- 📋 Enhanced memory sharing between agents
 
-### 3. TinyDB Contact Database (Persistent)
-- `data/email_contacts.json`
-- Survives across sessions
-- Fast lookups prioritized over API searches
-- User-controlled additions
+## Development Guidelines
 
-## Tool Workflow Patterns
+### Adding New Tools
+1. Add method to service class (`GmailTools` or `CalendarTools`)
+2. Create tool wrapper file in appropriate `tools/` subdirectory
+3. Export tool in `__init__.py`
+4. Register tool in agent definition
+5. Update system prompt if needed
 
-### Email Address Verification Workflow
-```
-1. User: "Email John"
-2. Agent → query_email_database("John")
-3. If found: Use cached email
-4. If not found:
-   a. Agent → find_email_address("John") [searches all emails]
-   b. If found: Ask user to add to database
-   c. If not found: Ask user for email
-```
+### Adding New Agents
+1. Create agent definition in `agents/`
+2. Create tool directory structure
+3. Implement service class and dependency injection
+4. Create standalone test CLI
+5. Plan LangGraph integration
 
-### New Sender Detection Workflow
-```
-1. User reads email from new sender
-2. Agent → check_if_human_sender(sender_email)
-3. If human:
-   a. Agent → query_email_database(sender_name)
-   b. If not in database:
-      - Ask user: "Add to database?"
-      - If yes → add_email_to_database()
-```
-
-### Draft vs Send Decision Tree
-```
-User request
-    │
-    ├─> Contains "draft", "prepare", "write" → create_draft_email()
-    │
-    ├─> Contains "send" + confirms email → send_email()
-    │
-    └─> Important/complex → create_draft_email() (safety)
-```
-
-## Running the Application
-
-```bash
-# Set up environment
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-pip install -r requirements.txt
-
-# Configure credentials
-# 1. Add OPENAI_API_KEY to .env
-# 2. Place Google OAuth credentials at config/google_credentials.json
-
-# Run the application
-python main.py
-```
-
-## First Run Flow
-
-```
-1. main.py starts
-2. Loads .env (OPENAI_API_KEY)
-3. Creates graph via create_gmail_graph()
-4. Runs graph via run_gmail_graph()
-5. Gmail authentication:
-   a. Checks for config/google_token.json
-   b. If missing:
-      - Loads config/google_credentials.json
-      - Opens browser for OAuth
-      - User grants permissions
-      - Saves token to google_token.json
-   c. If exists: Loads and refreshes token
-6. Displays Mermaid graph visualization
-7. Enters conversation loop
-```
-
-## Adding New Features
-
-### Adding a Gmail Tool
-1. Add method to `GmailTools` class in `tools/gmail_tools.py`
-2. Create async Pydantic AI tool function
-3. Register in `agents/gmail_agent.py` via `gmail_agent.tool()`
-4. Update system prompt if needed
-
-### Adding a Database Tool
-1. Create async function in `tools/email_database.py`
-2. Access `db` and `Contact` for TinyDB operations
-3. Register in `agents/gmail_agent.py` via `gmail_agent.tool()`
-4. Update system prompt for usage guidance
-
-### Adding a Node
-1. Define async function in `graph/nodes.py`
-2. Add to graph in `graph/builder.py` via `builder.add_node()`
-3. Configure edges (regular or conditional)
-4. Update `GmailState` if new fields needed
-
-### Adding Configuration
-1. Add constant to `config/settings.py`
-2. Import where needed: `from config.settings import MY_CONSTANT`
-
-## Gmail API Scopes
-
-Current scopes (defined in `tools/gmail_tools.py`):
-```python
-SCOPES = [
-    'https://www.googleapis.com/auth/gmail.modify',    # Read, labels, archive
-    'https://www.googleapis.com/auth/gmail.compose',   # Create drafts
-    'https://www.googleapis.com/auth/gmail.send',      # Send emails
-    'https://mail.google.com/'                         # Full access (delete)
-]
-```
-
-**Note**: If you add new operations requiring different scopes:
-1. Update `SCOPES` list
-2. Delete `config/google_token.json`
-3. Re-authenticate to get new permissions
-
-## Error Handling
-
-- **Gmail API Errors**: Caught and returned as user-friendly messages
-- **Database Errors**: Auto-create database if missing
-- **Tool Failures**: Agent receives error message, continues conversation
-- **Authentication Errors**: Clear instructions to re-authenticate
-
-## Testing Checklist
-
-- [ ] First-time OAuth flow works
-- [ ] Token refresh works on subsequent runs
-- [ ] Email listing shows correct data
-- [ ] Email search uses correct query syntax
-- [ ] Email modification operations succeed
-- [ ] Draft creation works
-- [ ] Email sending works with verified addresses
-- [ ] Database queries return expected results
-- [ ] Database additions persist across sessions
-- [ ] New sender detection triggers appropriately
-- [ ] Conversation memory persists across turns
-- [ ] `/history` command shows correct data
-- [ ] `quit` exits gracefully
-- [ ] Logs are created with correct format
-
-## Benefits of This Structure
-
-- **Modularity**: Each file has a single, clear purpose
-- **Testability**: Components can be tested in isolation
-- **Scalability**: Easy to add new tools, nodes, or capabilities
-- **Maintainability**: Clear separation of concerns
-- **Reusability**: Tools and utilities work independently
-- **Security**: Credentials and tokens properly isolated
-- **Debuggability**: Comprehensive logging at all levels
-- **Documentation**: Self-documenting code with clear structure
-
-## Common Files to Edit
-
-| Task | Files to Modify |
-|------|----------------|
-| Add Gmail operation | `tools/gmail_tools.py`, `agents/gmail_agent.py` |
-| Add database query | `tools/email_database.py`, `agents/gmail_agent.py` |
-| Change conversation flow | `graph/builder.py`, `graph/nodes.py` |
-| Update agent behavior | `agents/gmail_agent.py` (system prompt) |
-| Add configuration | `config/settings.py` |
-| Modify state structure | `graph/state.py` |
-| Change authentication | `tools/gmail_tools.py` (SCOPES, authenticate method) |
-
-## Environment Variables
-
-Required in `.env`:
-```bash
-OPENAI_API_KEY=sk-...  # Your OpenAI API key
-```
-
-Optional:
-```bash
-LOG_LEVEL=DEBUG        # Logging level (default: DEBUG)
-```
-
-## Gitignore Strategy
-
-Protected files (gitignored):
-- `config/google_token.json` - OAuth token (regenerated)
-- `data/` - Contact database (user-specific)
-- `logs/` - Debug logs (temporary)
-- `.env` - API keys (secrets)
-- `__pycache__/` - Python cache
-
-Committed files:
-- `config/google_credentials.json` - OAuth client ID (can be shared in private repo, or gitignored for public repos)
-- `.env.example` - Template for environment variables
-- All Python source code
-- Documentation files
-
-## Quick Command Reference
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run application
-python main.py
-
-# View logs
-tail -f logs/langgraph_memory_debug_*.log
-
-# Reset authentication
-rm config/google_token.json
-
-# Clear contact database
-rm data/email_contacts.json
-
-# Check graph visualization
-# (Run app, copy Mermaid output, paste to https://mermaid.live)
-```
-
-## Extending to Multi-Agent System
-
-To add more agents (e.g., Calendar, Tasks):
-
-1. **Create new agent**: `agents/calendar_agent.py`
-2. **Create new tools**: `tools/calendar_tools.py`
-3. **Update state**: Add calendar fields to `GmailState` (or create `UnifiedState`)
-4. **Add routing**: Create router node in `graph/nodes.py` to decide which agent to use
-5. **Update graph**: Add conditional edges based on user intent
-
-Example routing:
-```python
-def route_to_agent(state: UnifiedState) -> str:
-    query = state["user_query"].lower()
-    if "email" in query or "gmail" in query:
-        return "gmail_agent"
-    elif "calendar" in query or "meeting" in query:
-        return "calendar_agent"
-    else:
-        return "default_agent"
-```
+### Testing
+- **Gmail Agent**: `python main.py`
+- **Calendar Agent**: `python test_calendar.py`
+- **Graph Visualization**: `python graph_visualization.py`
