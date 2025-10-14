@@ -2,9 +2,17 @@
 
 A powerful, conversational Gmail assistant built with LangGraph and Pydantic AI. Manage your emails naturally through conversation, with built-in memory, smart contact caching, and comprehensive Gmail operations.
 
+---
+
+## Calendar Agent (Standalone)
+
+In addition to the Gmail agent, this repository now includes a Google Calendar agent built with Pydantic AI. The Calendar agent currently runs as a standalone CLI service for development and testing.
+
+Planned next step: integrate the Calendar agent into the existing LangGraph architecture with an orchestrator agent that can route user requests to Gmail and/or Calendar based on intent.
+
 ## Features
 
-- **AI-Powered**: OpenAI GPT-4o-mini with Pydantic AI for natural language understanding
+- **AI-Powered**: OpenAI (e.g., gpt-4o-mini) with Pydantic AI for natural language understanding
 - **Conversation Memory**: LangGraph's built-in memory system remembers context across the conversation
 - **Full Gmail Integration**: View, search, modify, and send emails via Google Gmail API
 - **Smart Unsubscribe**: Automatic one-click unsubscribe or guided manual unsubscribe from marketing emails
@@ -16,6 +24,16 @@ A powerful, conversational Gmail assistant built with LangGraph and Pydantic AI.
 - **Graph Visualization**: Separate utility to generate Mermaid diagrams of conversation flow
 - **Modular Architecture**: Clean, organized, production-ready codebase with one tool per file
 
+### Calendar Agent Features (Current)
+- **Event Management**: List, get details, create, update, and delete events
+- **Time Awareness**: Tool to retrieve current date/time on demand
+- **Attendees**: Add/remove attendees from events
+- **RSVP**: Update RSVP status (going, not going, tentative)
+- **Google Meet**: Create events with Meet or add Meet link to existing events
+- **Notifications**: Configure reminders (e.g., 10 and 30 minutes before)
+- **Contact Database**: Reuse TinyDB tools to add/list/query/remove contacts
+- **PST Context**: Assumes user timezone is PST for natural language times
+
 ## Quick Start
 
 ### Prerequisites
@@ -23,7 +41,7 @@ A powerful, conversational Gmail assistant built with LangGraph and Pydantic AI.
 Before you begin, make sure you have:
 
 - Python 3.11 or higher installed
-- OpenAI API key ([get one here](https://platform.openai.com/api-keys))
+- OpenAI API key ([create here](https://platform.openai.com/api-keys))
 - Google Cloud Project ([create here](https://console.cloud.google.com/))
 - Gmail API enabled in your Google Cloud Project
 - OAuth 2.0 Desktop credentials downloaded
@@ -49,10 +67,30 @@ cp .env.example .env
 
 **Edit `.env` file:**
 ```bash
-OPENAI_API_KEY=sk-your-actual-key-here
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 Get your OpenAI API key from: https://platform.openai.com/api-keys
+
+### Google Calendar Setup (Standalone Agent)
+
+1. Enable the Google Calendar API in your Google Cloud project
+2. Use the same OAuth Desktop credentials JSON used for Gmail (or create a new one)
+3. Save credentials as `config/google_credentials.json`
+4. On first run, a Calendar token will be created at `config/google_calendar_token.json`
+
+Run the standalone Calendar agent CLI:
+
+```bash
+python test_calendar.py
+```
+
+Examples you can try:
+- "what events do I have tomorrow"
+- "schedule a meeting tomorrow at 2pm with a Google Meet"
+- "add mangesh to the team standup as an attendee"
+- "mark me as going for the 3pm meeting"
+- "set 10 and 30 minute reminders for that event"
 
 ### LangSmith Setup (Optional - Recommended for Production)
 
@@ -119,7 +157,7 @@ That's it! LangGraph will automatically send traces to LangSmith. View them at h
    - Move it to the `config/` directory in your project:
      ```bash
      mv ~/Downloads/client_secret_*.json config/google_credentials.json
-     ```
+```
 
 ### Running the Application
 
@@ -139,6 +177,12 @@ On first run, it will:
 3. Save the token to `config/google_token.json`
 4. Start the conversation interface
 
+To run the Calendar agent (standalone CLI):
+
+```bash
+python test_calendar.py
+```
+
 ## Project Structure
 
 ```
@@ -146,7 +190,8 @@ langgraph_playground/
 ├── main.py                          # Entry point
 ├── graph_visualization.py           # Standalone graph visualization utility
 ├── agents/                          # AI agent definitions
-│   └── gmail_agent.py               # Pydantic AI Gmail agent with tools
+│   ├── gmail_agent.py               # Pydantic AI Gmail agent with tools
+│   └── calendar_agent.py            # Pydantic AI Calendar agent (standalone for now)
 ├── graph/                           # LangGraph components
 │   ├── state.py                     # GmailState definitions
 │   ├── nodes.py                     # Node functions (user_input, gmail_agent)
@@ -184,7 +229,20 @@ langgraph_playground/
 │   │   ├── check_human_sender.py    # Detect human vs automated
 │   │   ├── list_contacts.py         # List all contacts
 │   │   └── remove_contact.py        # Remove contact
-│   └── conversation_tools/          # Conversation control (2 files)
+│   ├── conversation_tools/          # Conversation control (2 files)
+│   └── calendar_tools/              # Google Calendar operations (multiple files)
+│       ├── __init__.py              # Exports all Calendar tools
+│       ├── core.py                  # CalendarTools service class & CalendarDeps
+│       ├── list_events.py           # List upcoming events
+│       ├── get_event.py             # Get event details
+│       ├── create_event.py          # Create new event
+│       ├── update_event.py          # Modify time/details
+│       ├── manage_attendees.py      # Add/remove attendees
+│       ├── delete_event.py          # Delete event
+│       ├── update_rsvp.py           # RSVP updates
+│       ├── get_current_time.py      # Current date/time tool
+│       ├── add_google_meet.py       # Add Meet / create event with Meet
+│       └── set_reminders.py         # Configure event reminders
 │       ├── __init__.py              # Exports conversation tools
 │       └── end_conversation.py      # End conversation tool
 ├── utils/                     # Utilities
@@ -192,7 +250,8 @@ langgraph_playground/
 ├── config/                    # Configuration
 │   ├── settings.py            # Application constants
 │   ├── google_credentials.json # OAuth client credentials (you provide)
-│   └── google_token.json      # Generated auth token (gitignored)
+│   ├── google_token.json      # Gmail auth token (gitignored)
+│   └── google_calendar_token.json # Calendar auth token (gitignored)
 ├── data/                      # Data storage
 │   └── email_contacts.json    # TinyDB contact cache (gitignored)
 └── logs/                      # Generated logs (gitignored)
@@ -297,6 +356,20 @@ Agent: [Lists all saved contacts with emails]
 - `/context` - Same as /history
 - `quit` or `exit` - End conversation
 
+### Calendar Agent (Standalone) Usage
+
+Run:
+```bash
+python test_calendar.py
+```
+
+What you can say:
+- "show my upcoming meetings"
+- "schedule a meeting tomorrow at 2pm with a Google Meet"
+- "add sarah@example.com to the standup"
+- "mark me as maybe for the client sync"
+- "set 10 and 30 minute reminders"
+
 ## How It Works
 
 ### Architecture
@@ -305,6 +378,17 @@ Agent: [Lists all saved contacts with emails]
 START → user_input ⇄ gmail_agent (bidirectional loop)
                 ↓
                END
+
+Planned Orchestration (Upcoming):
+
+```
+START → user_input ⇄ orchestrator_agent → [gmail_agent, calendar_agent]
+                                       ↘ possibly both in sequence
+                 ↓
+                END
+```
+
+The orchestrator will route intents to Gmail and/or Calendar agents within the LangGraph, enabling a single unified assistant.
 ```
 
 **Bidirectional Flow:**
@@ -312,7 +396,7 @@ START → user_input ⇄ gmail_agent (bidirectional loop)
 - Agent processes and responds
 - Loop continues until user exits
 
-### Three-Layer Memory System
+### Three-Layer Memory System (Gmail)
 
 1. **LangGraph MemorySaver**: Conversation history across turns
 2. **Email State Cache**: Fetched emails referenced by number
@@ -399,6 +483,27 @@ When you view an email from a new sender:
 
 ### Conversation
 - `end_conversation()` - Graceful exit
+
+## Calendar Agent Tools (Standalone)
+
+### Viewing
+- `list_upcoming_events()` - List upcoming events
+- `get_event_details()` - Get event details by ID
+
+### Creation
+- `schedule_meeting()` - Create a new event
+- `schedule_meeting_with_google_meet()` - Create new event with Meet
+
+### Modification
+- `modify_meeting_time()` - Reschedule
+- `update_meeting_details()` - Update title/description/location
+- `add_attendees_to_meeting()` / `remove_attendees_from_meeting()`
+- `update_rsvp_status()` - accepted/declined/tentative/needsAction
+- `add_google_meet_to_event()` - Add Meet to an existing event
+- `configure_event_notifications()` - Set reminders (e.g., [10, 30])
+
+### Utility
+- `get_current_datetime()` - Always use to resolve "today/now" and relative dates
 
 ## Development
 
@@ -507,7 +612,7 @@ from:john subject:meeting after:2024/01/01
 |-----------|-----------|---------|
 | **Orchestration** | LangGraph | State management, conversation flow |
 | **AI Agent** | Pydantic AI | Tool calling, NLU |
-| **LLM** | OpenAI GPT-4o-mini | Language model |
+| **LLM** | OpenAI (e.g., gpt-4o-mini) | Language model |
 | **Email API** | Google Gmail API | Email operations |
 | **Database** | TinyDB | Contact cache (NoSQL) |
 | **Auth** | Google OAuth 2.0 | Secure Gmail access |
@@ -554,8 +659,8 @@ pip install -r requirements.txt
 **Problem**: Environment variable not set  
 **Solution**:
 1. Create `.env` file from `.env.example`: `cp .env.example .env`
-2. Edit `.env` and add your OpenAI API key
-3. Make sure the key starts with `sk-`
+2. Edit `.env` and add your OpenAI API key from https://platform.openai.com/api-keys
+3. Key should start with `AIza`
 
 ## Security & Privacy
 
@@ -631,7 +736,8 @@ Goodbye!
 
 - [ ] Attachment upload/download support
 - [ ] Email templates with variables
-- [ ] Calendar integration
+- [ ] Orchestrator agent to route Gmail/Calendar within LangGraph
+- [ ] Integrate Calendar agent into LangGraph graph and state
 - [ ] Email analytics and insights
 - [ ] Multi-account support
 - [ ] Smart reply suggestions

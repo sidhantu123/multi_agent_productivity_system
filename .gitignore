@@ -56,3 +56,7 @@ data/
 config/google_token.json
 config/google_credentials.json
 
+
+# Ignore OAuth tokens
+config/google_token.json
+config/google_calendar_token.json
