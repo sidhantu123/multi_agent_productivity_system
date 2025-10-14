@@ -1,6 +1,6 @@
-# Gmail Agent - LangGraph Edition
+# Multi-Agent Productivity System (Gmail + Calendar)
 
-A powerful, conversational Gmail assistant built with LangGraph and Pydantic AI. Manage your emails naturally through conversation, with built-in memory, smart contact caching, and comprehensive Gmail operations.
+A modular, conversational productivity system built with LangGraph and Pydantic AI. It currently includes two agents: a Gmail agent and a Google Calendar agent. Manage emails and calendar events naturally through conversation, with built-in memory, smart contact caching, and comprehensive Google integrations. An orchestrator agent will soon route intents across Gmail and Calendar for a unified experience.
 
 ---
 
@@ -10,7 +10,7 @@ In addition to the Gmail agent, this repository now includes a Google Calendar a
 
 Planned next step: integrate the Calendar agent into the existing LangGraph architecture with an orchestrator agent that can route user requests to Gmail and/or Calendar based on intent.
 
-## Features
+## System Features
 
 - **AI-Powered**: OpenAI (e.g., gpt-4o-mini) with Pydantic AI for natural language understanding
 - **Conversation Memory**: LangGraph's built-in memory system remembers context across the conversation
@@ -24,7 +24,7 @@ Planned next step: integrate the Calendar agent into the existing LangGraph arch
 - **Graph Visualization**: Separate utility to generate Mermaid diagrams of conversation flow
 - **Modular Architecture**: Clean, organized, production-ready codebase with one tool per file
 
-### Calendar Agent Features (Current)
+## Calendar Agent Features
 - **Event Management**: List, get details, create, update, and delete events
 - **Time Awareness**: Tool to retrieve current date/time on demand
 - **Attendees**: Add/remove attendees from events
