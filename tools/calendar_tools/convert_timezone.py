@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Dict, Any
 from pydantic_ai import RunContext
 from .core import CalendarDeps
+import pytz
 
 
 def convert_pst_to_utc(
@@ -59,36 +60,50 @@ def convert_pst_to_utc(
             'utc_datetime': None
         }
 
-    # Convert PST to UTC (add 8 hours for PST, 7 for PDT)
-    # For simplicity, using PST offset (8 hours) - adjust if needed for DST
-    utc_hour = hour + 8
-    utc_day = date
+    # Convert PST/PDT to UTC using pytz for accurate DST handling
+    pacific = pytz.timezone('America/Los_Angeles')
+    utc = pytz.UTC
 
-    # Handle day overflow (e.g., 10 PM PST = 6 AM UTC next day)
-    if utc_hour >= 24:
-        utc_hour -= 24
-        # Parse date and add 1 day
-        date_obj = datetime.strptime(date, '%Y-%m-%d')
-        from datetime import timedelta
-        next_day = date_obj + timedelta(days=1)
-        utc_day = next_day.strftime('%Y-%m-%d')
+    # Create naive datetime from date and time
+    naive_dt = datetime(
+        year=int(date.split('-')[0]),
+        month=int(date.split('-')[1]),
+        day=int(date.split('-')[2]),
+        hour=hour,
+        minute=minute,
+        second=second
+    )
 
-    # Format UTC datetime
-    utc_datetime = f"{utc_day}T{utc_hour:02d}:{minute:02d}:{second:02d}"
+    # Localize to Pacific timezone (this handles DST automatically)
+    pacific_dt = pacific.localize(naive_dt)
+
+    # Convert to UTC
+    utc_dt = pacific_dt.astimezone(utc)
+
+    # Format UTC datetime for Google Calendar API
+    utc_datetime = utc_dt.strftime('%Y-%m-%dT%H:%M:%S')
     pst_datetime_formatted = f"{date}T{hour:02d}:{minute:02d}:{second:02d}"
+
+    # Determine if DST is active
+    is_dst = bool(pacific_dt.dst())
+    timezone_abbr = 'PDT' if is_dst else 'PST'
+    offset_hours = 7 if is_dst else 8
 
     # Format human-readable times
     pst_hour_12 = hour % 12 if hour % 12 != 0 else 12
     pst_ampm = 'AM' if hour < 12 else 'PM'
-    utc_hour_12 = utc_hour % 12 if utc_hour % 12 != 0 else 12
-    utc_ampm = 'AM' if utc_hour < 12 else 'PM'
+    utc_hour_12 = utc_dt.hour % 12 if utc_dt.hour % 12 != 0 else 12
+    utc_ampm = 'AM' if utc_dt.hour < 12 else 'PM'
 
     return {
         'utc_datetime': utc_datetime,
         'pst_datetime': pst_datetime_formatted,
-        'pst_time': f'{pst_hour_12}:{minute:02d} {pst_ampm} PST',
+        'pst_time': f'{pst_hour_12}:{minute:02d} {pst_ampm} {timezone_abbr}',
         'utc_time': f'{utc_hour_12}:{minute:02d} {utc_ampm} UTC',
-        'conversion_note': f'Converted PST to UTC by adding 8 hours',
+        'conversion_note': f'Converted {timezone_abbr} to UTC by adding {offset_hours} hours (DST {"active" if is_dst else "inactive"})',
         'date': date,
-        'utc_date': utc_day
+        'utc_date': utc_dt.strftime('%Y-%m-%d'),
+        'timezone': timezone_abbr,
+        'dst_active': is_dst,
+        'offset_hours': offset_hours
     }

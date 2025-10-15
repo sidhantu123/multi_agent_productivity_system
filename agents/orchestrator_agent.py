@@ -34,7 +34,7 @@ Available Agents:
 Your Task:
 Analyze the user's request and respond with ONLY a JSON object in this exact format:
 {
-    "agent_type": "gmail" | "calendar" | "both",
+    "agent_type": "gmail" | "calendar" | "both" | "terminate",
     "reasoning": "your explanation",
     "execution_order": "gmail_first" | "calendar_first" (only if agent_type is 'both'),
     "gmail_instruction": "specific instruction for Gmail agent (only if agent_type is 'gmail' or 'both')",
@@ -50,6 +50,12 @@ CRITICAL RULES FOR "both":
   * Use "gmail_first" if Calendar needs email data (e.g., "schedule meeting with people from email")
   * Default to "gmail_first" if neither depends on the other
 
+Rules:
+- Use "gmail" if the request is ONLY about emails
+- Use "calendar" if the request is ONLY about calendar/events
+- Use "both" if the request involves BOTH email and calendar operations
+- Use "terminate" if the user wants to exit, quit, stop, end the conversation, or terminate the application
+
 Examples:
 
 User: "Show me my unread emails"
@@ -57,6 +63,18 @@ Response: {"agent_type": "gmail", "reasoning": "User wants to view emails", "gma
 
 User: "What meetings do I have tomorrow?"
 Response: {"agent_type": "calendar", "reasoning": "User wants to view calendar events", "calendar_instruction": "show meetings for tomorrow"}
+
+User: "exit"
+Response: {"agent_type": "terminate", "reasoning": "User wants to exit the application"}
+
+User: "quit the app"
+Response: {"agent_type": "terminate", "reasoning": "User requested to quit"}
+
+User: "terminate application"
+Response: {"agent_type": "terminate", "reasoning": "User wants to terminate the application"}
+
+User: "goodbye"
+Response: {"agent_type": "terminate", "reasoning": "User is ending the conversation"}
 
 User: "delete the event labeled 'Test Event' that is happening tomorrow, also create a new label called 'test_label'"
 Response: {

@@ -247,6 +247,18 @@ async def orchestrator_node(state: UnifiedState) -> dict:
 
         print(f"\n[Orchestrator] Routing to: {agent_type}")
         print(f"[Orchestrator] Reasoning: {reasoning}")
+
+        # Handle termination request
+        if agent_type == "terminate":
+            print("\nGoodbye! Terminating the application.\n")
+            return {
+                "agent_type": agent_type,
+                "continue_conversation": False,
+                "execution_order": execution_order,
+                "gmail_instruction": gmail_instruction,
+                "calendar_instruction": calendar_instruction
+            }
+
         if agent_type == "both":
             print(f"[Orchestrator] Execution order: {execution_order}")
             print(f"[Orchestrator] Gmail instruction: {gmail_instruction}")
@@ -279,7 +291,11 @@ def route_to_agent(state: UnifiedState) -> str:
 
     logger.debug(f"ROUTER - Agent type: {agent_type}, Execution order: {execution_order}")
 
-    if agent_type == "calendar":
+    if agent_type == "terminate":
+        # Terminate - should not reach here as orchestrator sets continue_conversation=False
+        logger.info("ROUTER - Termination requested")
+        return "END"
+    elif agent_type == "calendar":
         return "calendar_agent"
     elif agent_type == "both":
         # For "both", route based on execution_order
