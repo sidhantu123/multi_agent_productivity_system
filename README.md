@@ -193,7 +193,7 @@ langgraph_playground/
 │   ├── gmail_agent.py               # Pydantic AI Gmail agent with tools
 │   └── calendar_agent.py            # Pydantic AI Calendar agent (standalone for now)
 ├── graph/                           # LangGraph components
-│   ├── state.py                     # GmailState definitions
+│   ├── state.py                     # UnifiedState definitions
 │   ├── nodes.py                     # Node functions (user_input, gmail_agent)
 │   ├── builder.py                   # Graph construction
 │   └── runner.py                    # Execution logic
@@ -567,7 +567,7 @@ gmail_agent.tool(my_db_tool)
 
 ```bash
 # Test graph compilation
-python -c "from graph.builder import create_gmail_graph; graph = create_gmail_graph(); print('✓ Graph OK')"
+python -c "from graph.builder import create_graph; graph = create_graph(); print('✓ Graph OK')"
 
 # Test tool imports
 python -c "from tools.gmail_tools import unsubscribe_from_email; print('✓ Tools OK')"

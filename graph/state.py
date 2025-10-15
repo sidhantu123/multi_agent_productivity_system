@@ -1,17 +1,26 @@
-"""State definition for the Gmail conversation graph"""
+"""State definition for the unified multi-agent conversation graph"""
 
-from typing import TypedDict, Annotated, List, Optional
+from typing import TypedDict, Annotated, List, Optional, Literal
 from langgraph.graph.message import add_messages
 
 
-class GmailState(TypedDict):
-    """State for the Gmail conversation graph using LangGraph built-in memory"""
+class UnifiedState(TypedDict):
+    """Unified state for the multi-agent conversation graph using LangGraph built-in memory"""
     messages: Annotated[List[dict], add_messages]
     user_query: str
     agent_response: str
     continue_conversation: bool
+
+    # Orchestrator fields
+    agent_type: Optional[Literal["gmail", "calendar", "general"]]  # Which agent to route to
+
     # Gmail-specific fields
     emails: Optional[List[dict]]  # List of fetched emails
     selected_email_id: Optional[str]  # Currently selected email ID
     email_action: Optional[str]  # Action to perform (list, read, search, etc.)
+
+    # Calendar-specific fields
+    events: Optional[List[dict]]  # List of fetched calendar events
+    selected_event_id: Optional[str]  # Currently selected event ID
+    calendar_action: Optional[str]  # Action to perform (list, create, update, etc.)
 

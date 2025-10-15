@@ -68,8 +68,8 @@
 main.py
   ├─> load_dotenv()
   ├─> setup_logging()
-  ├─> create_gmail_graph()
-  │     ├─> Create StateGraph(GmailState)
+  ├─> create_graph()
+  │     ├─> Create StateGraph(UnifiedState)
   │     ├─> Add nodes (from nodes.py)
   │     ├─> Add edges
   │     └─> Compile with memory
@@ -164,7 +164,7 @@ main.py
      │ input
      ▼
 ┌──────────────┐
-│  GmailState  │ ◄──┐
+│ UnifiedState │ ◄──┐
 │ (graph/state)│    │
 │ • messages   │    │
 │ • emails[]   │    │
@@ -200,7 +200,7 @@ main.py
 1. **Separation of Concerns**: Each module has one responsibility
 2. **Dependency Injection**: GmailDeps injected into tools via RunContext
 3. **Lazy Initialization**: Agent and Gmail service created only when needed
-4. **Factory Pattern**: `create_gmail_graph()`, `create_gmail_agent()`
+4. **Factory Pattern**: `create_graph()`, `create_gmail_agent()`
 5. **State Machine**: LangGraph StateGraph pattern
 6. **Observer Pattern**: Event streaming in runner
 7. **Cache-Aside Pattern**: TinyDB database for contact lookups
@@ -286,7 +286,7 @@ User views/reads email
 ### Adding a New Node
 ```python
 # 1. Define in graph/nodes.py
-async def my_new_node(state: GmailState) -> dict:
+async def my_new_node(state: UnifiedState) -> dict:
     # logic here
     return updated_state
 
@@ -398,7 +398,7 @@ from config.settings import MY_SETTING
 ## State Structure
 
 ```python
-class GmailState(TypedDict):
+class UnifiedState(TypedDict):
     messages: Annotated[List[dict], add_messages]  # Conversation history
     user_query: str                                 # Current user input
     agent_response: str                             # Agent's response
@@ -554,7 +554,7 @@ def test_gmail_list():
 ```python
 # Test full conversation flow
 async def test_conversation():
-    graph = create_gmail_graph()
+    graph = create_graph()
     result = await graph.ainvoke({"user_query": "show unread"})
     assert "agent_response" in result
 ```

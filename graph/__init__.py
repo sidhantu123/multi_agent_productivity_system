@@ -1,11 +1,11 @@
-"""LangGraph Gmail agent graph components"""
+"""LangGraph multi-agent graph components"""
 
 # Avoid circular imports - import only what's needed
-from graph.state import GmailState
-from graph.builder import create_gmail_graph
+from graph.state import UnifiedState
+from graph.builder import create_graph
 
 __all__ = [
-    "GmailState",
-    "create_gmail_graph",
+    "UnifiedState",
+    "create_graph",
 ]
 

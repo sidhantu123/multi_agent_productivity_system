@@ -17,7 +17,9 @@ from tools.calendar_tools import (
     delete_meeting,
     update_rsvp_status,
     add_google_meet_to_event,
-    configure_event_notifications
+    configure_event_notifications,
+    lookup_event_by_reference,
+    convert_pst_to_utc
 )
 from tools.database_tools import (
     query_email_database,
@@ -71,22 +73,28 @@ CRITICAL - ALWAYS GET CURRENT DATE FIRST:
 - Before calculating "tomorrow", "next week", "in 3 days" → use get_current_datetime first
 - When scheduling anything with relative dates → use get_current_datetime to know the current date
 
-TIME FORMAT GUIDELINES:
-When creating or modifying events, times must be in ISO 8601 format:
-- Format: YYYY-MM-DDTHH:MM:SS
-- Times must be in UTC (convert from PST)
-- PST to UTC conversion: Add 8 hours (or 7 during DST)
-- Example: "2pm PST" = "2024-03-20T22:00:00" (2pm + 8 hours = 10pm UTC)
+TIMEZONE CONVERSION - CRITICAL WORKFLOW:
+When creating or modifying events with PST times, YOU MUST use convert_pst_to_utc tool:
 
-When users mention times (assume PST if not specified):
-- "tomorrow at 2pm" → calculate tomorrow's date, add 2pm PST, convert to UTC
-- "next Monday at 10am" → calculate next Monday + 10am PST → UTC
-- "March 20 at 3:30pm" → 2024-03-20 at 3:30pm PST → convert to UTC
+Step-by-step process:
+1. Get current date using get_current_datetime (if needed for relative dates like "tomorrow")
+2. Determine the date for the event (e.g., "2025-10-15")
+3. For EACH time (start and end), call convert_pst_to_utc:
+   - convert_pst_to_utc(pst_datetime="15:00", date="2025-10-15") for 3 PM
+   - convert_pst_to_utc(pst_datetime="16:00", date="2025-10-15") for 4 PM
+4. Use the returned utc_datetime values in schedule_meeting or modify_meeting_time
 
-PST/PDT Examples:
-- 9am PST = 17:00:00 UTC (5pm)
-- 2pm PST = 22:00:00 UTC (10pm)
-- 5pm PST = 01:00:00 UTC next day (1am)
+Example workflow for "tomorrow at 3pm - 4pm PST":
+1. Call get_current_datetime → returns tomorrow_date: "2025-10-15"
+2. Call convert_pst_to_utc("15:00", "2025-10-15") → returns utc_datetime: "2025-10-15T23:00:00"
+3. Call convert_pst_to_utc("16:00", "2025-10-15") → returns utc_datetime: "2025-10-16T00:00:00"
+4. Call schedule_meeting(title="...", start_time="2025-10-15T23:00:00", end_time="2025-10-16T00:00:00", ...)
+
+NEVER manually calculate UTC times - ALWAYS use convert_pst_to_utc tool for each time!
+
+TIME FORMAT for API:
+- All times passed to schedule_meeting, schedule_meeting_with_google_meet, and modify_meeting_time MUST be in ISO 8601 UTC format: YYYY-MM-DDTHH:MM:SS
+- Example: "2025-10-15T23:00:00" (not "2025-10-15T23:00:00Z", not "23:00", not "3pm")
 
 GOOGLE MEET VIDEO CONFERENCING:
 - If user mentions "Google Meet", "video call", "join with Meet", "virtual meeting" → use schedule_meeting_with_google_meet
@@ -135,10 +143,22 @@ EVENT NOTIFICATIONS/REMINDERS:
   * "Remind me 1 hour before" → [60]
 
 REFERENCING EVENTS:
+When users reference events by number ("the first event", "event 2", "the second calendar event"):
+- CRITICAL: ALWAYS use the lookup_event_by_reference tool FIRST
+- Pass the user's reference (e.g., "second", "2", "first") to get the correct event ID
+- The tool will return the proper event ID to use with other calendar tools
+- NEVER extract event IDs from URLs or links - always use lookup_event_by_reference
+
+Example workflow:
+User: "Add my school email to the second calendar event"
+Step 1: Call lookup_event_by_reference("second") → returns "Event ID: abc123..."
+Step 2: Extract the event ID (abc123) from the response
+Step 3: Call add_attendees_to_meeting(event_id="abc123", attendee_emails=["school@email.com"])
+
 When users reference events:
-- By number: "the first event", "event 2" → from most recent list
-- By title: "the Team Standup meeting"
-- By time: "my 2pm meeting today"
+- By number ("first", "second", "2", etc): Use lookup_event_by_reference tool
+- By title: Use lookup_event_by_reference with the title
+- By time: Search context or use get_event_details if you know the ID
 
 Always confirm before:
 - Deleting a meeting
@@ -159,7 +179,9 @@ Always show event details after creating or modifying them.
 
     # Register utility tools
     calendar_agent.tool(get_current_datetime)
-    
+    calendar_agent.tool(lookup_event_by_reference)
+    calendar_agent.tool(convert_pst_to_utc)
+
     # Register viewing tools
     calendar_agent.tool(list_upcoming_events)
     calendar_agent.tool(get_event_details)

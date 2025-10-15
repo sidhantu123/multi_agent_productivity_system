@@ -1,7 +1,7 @@
 """Graph execution logic"""
 
 import os
-from graph.state import GmailState
+from graph.state import UnifiedState
 from config.settings import THREAD_ID, SEPARATOR_LENGTH, MEMORY_SEPARATOR_LENGTH
 from utils.logging import get_logger
 
@@ -9,7 +9,7 @@ logger = get_logger()
 
 
 async def run_gmail_graph(graph):
-    """Run the Gmail graph system"""
+    """Run the multi-agent graph system with orchestrator"""
     # Check if OpenAI API key is set
     if not os.getenv('OPENAI_API_KEY'):
         print("Warning: OPENAI_API_KEY not found in environment variables")
@@ -17,14 +17,18 @@ async def run_gmail_graph(graph):
         return
 
     # Initial state - LangGraph handles memory automatically
-    initial_state: GmailState = {
+    initial_state: UnifiedState = {
         "messages": [],
         "user_query": "",
         "agent_response": "",
         "continue_conversation": True,
+        "agent_type": None,
         "emails": None,
         "selected_email_id": None,
-        "email_action": None
+        "email_action": None,
+        "events": None,
+        "selected_event_id": None,
+        "calendar_action": None
     }
 
     # Configuration for the graph
@@ -34,13 +38,13 @@ async def run_gmail_graph(graph):
         }
     }
 
-    print("Starting Gmail Agent Graph...")
+    print("Starting Multi-Agent System with Orchestrator...")
     print("Tip: The graph will pause for your input at each turn")
     print("Memory: Using LangGraph's built-in memory features")
     print("Commands: Type /help for available commands")
     print("Visualization: Run 'python graph_visualization.py' to see graph structure\n")
     print("="*SEPARATOR_LENGTH)
-    print("Gmail Agent - LangGraph Edition with Built-in Memory")
+    print("Multi-Agent System - Gmail & Calendar with LLM Orchestrator")
     print("="*SEPARATOR_LENGTH)
 
     try:
@@ -123,12 +127,16 @@ async def run_gmail_graph(graph):
 def _display_help():
     """Display help information"""
     print("\n" + "="*MEMORY_SEPARATOR_LENGTH)
-    print("GMAIL AGENT COMMANDS")
+    print("MULTI-AGENT SYSTEM COMMANDS")
     print("="*MEMORY_SEPARATOR_LENGTH)
     print("Available commands:")
     print("  /history, /memory, /context - Show conversation memory")
     print("  /help, /commands - Show this help")
     print("  quit, exit, q - End conversation")
+    print("\nAvailable Agents:")
+    print("  Gmail Agent - Email operations (reading, sending, managing)")
+    print("  Calendar Agent - Calendar operations (events, meetings, scheduling)")
+    print("  Orchestrator - Intelligently routes your requests to the right agent")
     print("\nLangGraph Memory Features:")
     print("  Automatic conversation memory (MemorySaver)")
     print("  Long-term memory storage (InMemoryStore)")

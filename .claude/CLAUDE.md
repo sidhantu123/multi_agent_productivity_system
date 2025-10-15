@@ -100,7 +100,7 @@ python graph_visualization.py
 ## LangGraph Integration (Gmail Agent)
 
 ### Current Implementation
-- **State Management**: `GmailState` with conversation history and email cache
+- **State Management**: `UnifiedState` with conversation history and email cache
 - **Node Functions**: User input processing, agent execution, response display
 - **Memory**: Built-in conversation persistence with `MemorySaver`
 - **Routing**: Conditional edges based on conversation flow

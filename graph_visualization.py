@@ -1,17 +1,17 @@
-"""Graph Visualization - Generate Mermaid diagram of the Gmail Agent graph"""
+"""Graph Visualization - Generate Mermaid diagram of the Multi-Agent graph"""
 
 import asyncio
-from graph.builder import create_gmail_graph
+from graph.builder import create_graph
 
 
 def visualize_graph():
     """Generate and display the graph visualization in Mermaid format"""
     print("\n" + "="*80)
-    print("Gmail Agent Graph Visualization (Mermaid)")
+    print("Multi-Agent Graph Visualization (Mermaid)")
     print("="*80)
     
     # Create the graph
-    graph = create_gmail_graph()
+    graph = create_graph()
     
     try:
         # Generate Mermaid diagram

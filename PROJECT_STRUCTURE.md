@@ -19,7 +19,7 @@ langgraph_playground/
 │
 ├── graph/                           # LangGraph components (Gmail agent only)
 │   ├── __init__.py                  # Package exports
-│   ├── state.py                     # GmailState type definition
+│   ├── state.py                     # UnifiedState type definition
 │   ├── nodes.py                     # Node function implementations
 │   ├── builder.py                   # Graph construction logic
 │   └── runner.py                    # Graph execution and visualization
@@ -145,7 +145,7 @@ langgraph_playground/
 ### `graph/` - LangGraph Components (Gmail Agent Only)
 
 #### `state.py`
-- Defines `GmailState` TypedDict with fields:
+- Defines `UnifiedState` TypedDict with fields:
   - `messages`: Conversation history (LangGraph's `add_messages` reducer)
   - `user_query`: Current user input
   - `agent_response`: Agent's response
@@ -177,8 +177,8 @@ langgraph_playground/
   - Returns "continue" or "end"
 
 #### `builder.py`
-- **`create_gmail_graph()`**:
-  - Creates `StateGraph(GmailState)`
+- **`create_graph()`**:
+  - Creates `StateGraph(UnifiedState)`
   - Adds all nodes from `nodes.py`
   - Defines edges and routing logic
   - Compiles with `MemorySaver` for conversation persistence
