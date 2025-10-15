@@ -12,7 +12,10 @@ class UnifiedState(TypedDict):
     continue_conversation: bool
 
     # Orchestrator fields
-    agent_type: Optional[Literal["gmail", "calendar", "general"]]  # Which agent to route to
+    agent_type: Optional[Literal["gmail", "calendar", "both"]]  # Which agent to route to
+    execution_order: Optional[Literal["gmail_first", "calendar_first"]]  # For "both" tasks
+    gmail_instruction: Optional[str]  # Specialized instruction for Gmail agent
+    calendar_instruction: Optional[str]  # Specialized instruction for Calendar agent
 
     # Gmail-specific fields
     emails: Optional[List[dict]]  # List of fetched emails

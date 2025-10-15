@@ -17,11 +17,12 @@ from config.settings import INTERRUPT_BEFORE
 
 
 def create_graph():
-    """Create and compile the LangGraph multi-agent system with orchestrator routing"""
+    """Create and compile the LangGraph multi-agent system with orchestrator routing using Command"""
     # Create the graph
     builder = StateGraph(UnifiedState)
 
-    # Add nodes (flow: user_input -> orchestrator -> [gmail_agent | calendar_agent] -> user_input)
+    # Add nodes (flow: user_input -> orchestrator -> [gmail_agent | calendar_agent])
+    # Agents now use Command to route dynamically, so no conditional edges needed
     builder.add_node("user_input", user_input_node)
     builder.add_node("orchestrator", orchestrator_node)
     builder.add_node("gmail_agent", gmail_agent_node)
@@ -50,25 +51,10 @@ def create_graph():
         }
     )
 
-    # Conditional edge from gmail_agent -> user_input or END
-    builder.add_conditional_edges(
-        "gmail_agent",
-        should_continue,
-        {
-            "continue": "user_input",
-            "end": END
-        }
-    )
-
-    # Conditional edge from calendar_agent -> user_input or END
-    builder.add_conditional_edges(
-        "calendar_agent",
-        should_continue,
-        {
-            "continue": "user_input",
-            "end": END
-        }
-    )
+    # No edges from gmail_agent or calendar_agent - they use Command to route dynamically!
+    # Command pattern allows agents to decide their own routing:
+    # - gmail_agent can route to: calendar_agent (if agent_type="both"), user_input, or END
+    # - calendar_agent can route to: user_input or END
 
     # Compile with LangGraph's built-in memory features
     # MemorySaver handles conversation memory automatically
