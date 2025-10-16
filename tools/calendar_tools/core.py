@@ -85,7 +85,7 @@ class CalendarTools:
         days_ahead: int = 7
     ) -> List[Dict[str, Any]]:
         """
-        List upcoming calendar events
+        List upcoming calendar events (legacy method - use list_events_in_range for more control)
 
         Args:
             max_results: Maximum number of events to return (default 10)
@@ -94,17 +94,57 @@ class CalendarTools:
         Returns:
             List of event dictionaries
         """
+        return self.list_events_in_range(
+            max_results=max_results,
+            start_time=None,
+            end_time=None,
+            days_ahead=days_ahead
+        )
+
+    def list_events_in_range(
+        self,
+        max_results: int = 10,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        days_ahead: int = 7
+    ) -> List[Dict[str, Any]]:
+        """
+        List calendar events within a specified time range
+
+        Args:
+            max_results: Maximum number of events to return (default 10)
+            start_time: Start of time range in ISO format (e.g., "2025-10-15T00:00:00Z").
+                       If not provided, uses current time.
+            end_time: End of time range in ISO format (e.g., "2025-10-15T23:59:59Z").
+                     If not provided, looks days_ahead from start_time.
+            days_ahead: Days to look ahead if end_time not specified (default 7)
+
+        Returns:
+            List of event dictionaries
+        """
         if not self.service:
             raise RuntimeError("Calendar service not authenticated")
 
         try:
-            # Get time range
-            now = datetime.utcnow().isoformat() + 'Z'
-            time_max = (datetime.utcnow() + timedelta(days=days_ahead)).isoformat() + 'Z'
+            # Set time range
+            if start_time:
+                time_min = start_time if start_time.endswith('Z') else start_time + 'Z'
+            else:
+                time_min = datetime.utcnow().isoformat() + 'Z'
+
+            if end_time:
+                time_max = end_time if end_time.endswith('Z') else end_time + 'Z'
+            else:
+                # Parse start time to add days_ahead
+                if start_time:
+                    start_dt = datetime.fromisoformat(start_time.replace('Z', ''))
+                else:
+                    start_dt = datetime.utcnow()
+                time_max = (start_dt + timedelta(days=days_ahead)).isoformat() + 'Z'
 
             events_result = self.service.events().list(
                 calendarId='primary',
-                timeMin=now,
+                timeMin=time_min,
                 timeMax=time_max,
                 maxResults=max_results,
                 singleEvents=True,
@@ -112,7 +152,7 @@ class CalendarTools:
             ).execute()
 
             events = events_result.get('items', [])
-            
+
             # Parse events into readable format
             parsed_events = []
             for event in events:

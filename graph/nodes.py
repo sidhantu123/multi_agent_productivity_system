@@ -248,6 +248,50 @@ async def orchestrator_node(state: UnifiedState) -> dict:
         print(f"\n[Orchestrator] Routing to: {agent_type}")
         print(f"[Orchestrator] Reasoning: {reasoning}")
 
+        # Handle orchestrator direct response (no routing needed)
+        if agent_type == "orchestrator":
+            logger.info("ORCHESTRATOR - Generating direct response")
+
+            # Build conversation context with history
+            existing_messages = state.get("messages", [])
+            conversation_context = f"Answer this user question directly (not as JSON routing): {user_query}"
+
+            if existing_messages:
+                context_parts = []
+                for msg in existing_messages[-10:]:  # Last 10 messages for context
+                    role = None
+                    content = None
+                    if isinstance(msg, dict):
+                        role = msg.get("role", "unknown")
+                        content = msg.get("content", "")
+                    else:
+                        try:
+                            role = getattr(msg, "type", None) or getattr(msg, "role", None) or "assistant"
+                            content = getattr(msg, "content", None) or str(msg)
+                        except Exception:
+                            role = "assistant"
+                            content = str(msg)
+                    context_parts.append(f"{role}: {content}")
+
+                if context_parts:
+                    conversation_context = "Previous conversation:\n" + "\n".join(context_parts) + f"\n\nCurrent question: Answer this directly (not as JSON): {user_query}"
+
+            # Use the same orchestrator agent to generate direct response with context
+            response_result = await orchestrator.run(conversation_context)
+            direct_response = str(response_result.output)
+
+            print(f"\n[Orchestrator] {direct_response}\n")
+
+            return {
+                "agent_type": agent_type,
+                "agent_response": direct_response,
+                "continue_conversation": True,
+                "messages": [{"role": "assistant", "content": direct_response}],
+                "execution_order": execution_order,
+                "gmail_instruction": gmail_instruction,
+                "calendar_instruction": calendar_instruction
+            }
+
         # Handle termination request
         if agent_type == "terminate":
             print("\nGoodbye! Terminating the application.\n")
@@ -295,6 +339,10 @@ def route_to_agent(state: UnifiedState) -> str:
         # Terminate - should not reach here as orchestrator sets continue_conversation=False
         logger.info("ROUTER - Termination requested")
         return "END"
+    elif agent_type == "orchestrator":
+        # Orchestrator handled the response directly, go back to user_input
+        logger.info("ROUTER - Orchestrator handled directly, routing to user_input")
+        return "user_input"
     elif agent_type == "calendar":
         return "calendar_agent"
     elif agent_type == "both":
@@ -334,9 +382,18 @@ async def calendar_agent_node(state: UnifiedState) -> Command[Literal["user_inpu
         # Get Calendar tools instance
         calendar_tools = get_calendar_tools()
 
+        # Pre-populate events if empty - fetch upcoming events for context
+        # This ensures lookup_event_by_reference and other tools have event context
+        events_for_context = state.get('events', [])
+        if not events_for_context:
+            # Fetch upcoming events to populate context
+            logger.info("CALENDAR_AGENT - Pre-fetching events for context")
+            events_for_context = calendar_tools.list_upcoming_events(max_results=20, days_ahead=30)
+            logger.info(f"CALENDAR_AGENT - Loaded {len(events_for_context)} events into context")
+
         # Create dependencies with event context and Calendar service
         deps = CalendarDeps(
-            events=state.get('events', []),
+            events=events_for_context,
             calendar_service=calendar_tools
         )
 

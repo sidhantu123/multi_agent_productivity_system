@@ -41,13 +41,14 @@ def create_graph():
         }
     )
 
-    # Conditional edge from orchestrator -> gmail_agent or calendar_agent or END
+    # Conditional edge from orchestrator -> gmail_agent or calendar_agent or user_input or END
     builder.add_conditional_edges(
         "orchestrator",
         route_to_agent,
         {
             "gmail_agent": "gmail_agent",
             "calendar_agent": "calendar_agent",
+            "user_input": "user_input",
             "END": END
         }
     )

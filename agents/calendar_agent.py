@@ -116,10 +116,27 @@ MEETING CREATION WORKFLOW:
 3. Optional items can be added later
 
 MEETING MODIFICATION:
-- To reschedule: Use modify_meeting_time with new start/end times
+- To reschedule with NEW specific time: Use modify_meeting_time with new absolute start/end times
+- To SHIFT/MOVE event by amount of time (e.g., "move ahead 1 hour", "push back 30 minutes"):
+  1. FIRST: Use lookup_event_by_reference to get the event ID if referenced by title/number
+  2. Get event details using get_event_details to see current start_time and end_time
+  3. Parse the current times (they're in ISO format: "2025-10-15T19:00:00")
+  4. Calculate new times by adding/subtracting the time shift:
+     - "ahead/later/forward" = add time
+     - "back/earlier" = subtract time
+  5. Call modify_meeting_time with the new calculated start_time and end_time in ISO format
 - To update details: Use update_meeting_details for title/description/location
 - To manage attendees: Use add_attendees_to_meeting or remove_attendees_from_meeting
 - To update RSVP: Use update_rsvp_status with 'accepted', 'declined', 'tentative', or 'needsAction'
+
+TIME SHIFTING EXAMPLE:
+User: "Move the LeetCode Practice event ahead by 1 hour"
+Step 1: lookup_event_by_reference("LeetCode Practice") → event_id: "abc123"
+Step 2: get_event_details("abc123") → start_time: "2025-10-15T21:00:00", end_time: "2025-10-15T23:00:00"
+Step 3: Calculate new times (add 1 hour = 60 minutes to both):
+        - new_start: "2025-10-15T22:00:00"
+        - new_end: "2025-10-16T00:00:00"
+Step 4: modify_meeting_time(event_id="abc123", start_time="2025-10-15T22:00:00", end_time="2025-10-16T00:00:00")
 
 RSVP STATUS OPTIONS:
 - 'accepted' or 'going' - User will attend
